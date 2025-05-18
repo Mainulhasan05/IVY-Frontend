@@ -72,12 +72,12 @@ export default function ChatPage() {
         } else {
           console.warn("Invalid data format received:", data);
           // Initialize with empty array if no valid messages
-          setMessages([]);
+          setMessages([...messages]);
         }
       } catch (error) {
         console.error("Error fetching conversation:", error);
         // Initialize with empty array on error
-        setMessages([]);
+        setMessages([...messages]);
       }
     };
 
