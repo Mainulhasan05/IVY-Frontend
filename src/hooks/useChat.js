@@ -51,18 +51,26 @@ export const useChat = () => {
 
   const sendMessage = async () => {
     const userText = inputValue.trim();
+
     if (!userText || isClosed) return;
-    setMessages((prev) => [...prev, { role: "user", content: userText, timestamp: getRoundedTimestamp() }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userText, timestamp: getRoundedTimestamp() },
+    ]);
     setInputValue("");
     setIsLoading(true);
-    setProcessingStatus('processing');
+    setProcessingStatus("processing");
     try {
       const data = await sendChatMessage({ userMessage: userText, threadId });
       if (data.threadId) setThreadId(data.threadId);
       if (data.error) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.error, timestamp: data.timestamp || getRoundedTimestamp() },
+          {
+            role: "assistant",
+            content: data.error,
+            timestamp: data.timestamp || getRoundedTimestamp(),
+          },
         ]);
         setIsLoading(false);
         setProcessingStatus(null);
@@ -80,13 +88,19 @@ export const useChat = () => {
           setPendingFolderRequest(true);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: data.response, timestamp: data.timestamp || getRoundedTimestamp() },
+            {
+              role: "assistant",
+              content: data.response,
+              timestamp: data.timestamp || getRoundedTimestamp(),
+            },
           ]);
           setIsLoading(true);
-          setProcessingStatus('processing');
+          setProcessingStatus("processing");
           setTimeout(async () => {
             setInputValue("");
-            await sendMessageAuto("Despedite del usuario de una manera muy personalizada y creale la carpeta en google drive para que pueda subir referencias para el producto deseado.");
+            await sendMessageAuto(
+              "Despedite del usuario de una manera muy personalizada y creale la carpeta en google drive para que pueda subir referencias para el producto deseado."
+            );
           }, 500);
           return;
         }
@@ -97,7 +111,11 @@ export const useChat = () => {
           await playAssistantAudio(data.response, messages.length);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: data.response, timestamp: data.timestamp || getRoundedTimestamp() },
+            {
+              role: "assistant",
+              content: data.response,
+              timestamp: data.timestamp || getRoundedTimestamp(),
+            },
             {
               role: "system",
               content: `🔒 La conversación ha finalizado. Si deseas iniciar una nueva, recarga la página.\n\n📁 Se ha creado una carpeta en Google Drive con la información de la conversación: ${data.folderUrl}`,
@@ -114,7 +132,11 @@ export const useChat = () => {
         await playAssistantAudio(data.response, messages.length);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.response, timestamp: data.timestamp || getRoundedTimestamp() },
+          {
+            role: "assistant",
+            content: data.response,
+            timestamp: data.timestamp || getRoundedTimestamp(),
+          },
         ]);
         playNotificationSound();
       }
@@ -138,16 +160,13 @@ export const useChat = () => {
   const sendMessageAuto = async (text, retryCount = 0) => {
     if (!text || isClosed) return;
     setIsLoading(true);
-    setProcessingStatus('processing');
+    setProcessingStatus("processing");
     try {
       const data = await sendChatMessage({ userMessage: text, threadId });
       if (data.threadId) setThreadId(data.threadId);
       if (data.error) {
         // Si el error es por run activo, reintenta después de un delay (máx 3 intentos)
-        if (
-          data.error.includes("while a run") &&
-          retryCount < 3
-        ) {
+        if (data.error.includes("while a run") && retryCount < 3) {
           setTimeout(() => {
             sendMessageAuto(text, retryCount + 1);
           }, 3000); // espera 3 segundos y reintenta
@@ -163,14 +182,20 @@ export const useChat = () => {
           setProcessingStatus(data.processingStatus);
         }
         // Si la respuesta incluye la URL de la carpeta y es cierre, mostrar mensaje de cierre
-        const isClosing = CLOSING_REGEX.some((regex) => regex.test(data.response));
+        const isClosing = CLOSING_REGEX.some((regex) =>
+          regex.test(data.response)
+        );
         if (isClosing && data.folderUrl) {
           setIsClosed(true);
           setPendingFolderRequest(false);
           await playAssistantAudio(data.response, messages.length);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: data.response, timestamp: data.timestamp || getRoundedTimestamp() },
+            {
+              role: "assistant",
+              content: data.response,
+              timestamp: data.timestamp || getRoundedTimestamp(),
+            },
             {
               role: "system",
               content: `🔒 La conversación ha finalizado. Si deseas iniciar una nueva, recarga la página.\n\n📁 Se ha creado una carpeta en Google Drive con la información de la conversación: ${data.folderUrl}`,
@@ -187,7 +212,11 @@ export const useChat = () => {
         await playAssistantAudio(data.response, messages.length);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.response, timestamp: data.timestamp || getRoundedTimestamp() },
+          {
+            role: "assistant",
+            content: data.response,
+            timestamp: data.timestamp || getRoundedTimestamp(),
+          },
         ]);
         playNotificationSound();
       }
@@ -225,6 +254,7 @@ export const useChat = () => {
     audioMessageIdx,
     pauseAudio,
     playAssistantAudio,
-    loadingAudioIdx
+    loadingAudioIdx,
+    setMessages,
   };
 };

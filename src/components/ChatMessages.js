@@ -1,14 +1,14 @@
 import { TypingIndicator } from "./TypingIndicator";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from "react-markdown";
 import { useEffect, useState } from "react";
 
 // Función para reemplazar palabras clave por emojis
 function replaceEmojis(text) {
   return text
-    .replace(/:check:/g, '✅')
-    .replace(/:star:/g, '⭐')
-    .replace(/:warning:/g, '⚠️')
-    .replace(/:info:/g, 'ℹ️');
+    .replace(/:check:/g, "✅")
+    .replace(/:star:/g, "⭐")
+    .replace(/:warning:/g, "⚠️")
+    .replace(/:info:/g, "ℹ️");
 }
 
 // Renderiza el mensaje del asistente con Markdown y emojis
@@ -17,12 +17,25 @@ function renderAssistantMessage(msg) {
   return (
     <ReactMarkdown
       components={{
-        a: ({node, ...props}) => (
-          <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline hover:text-blue-800 transition-colors">🔗 haz clic aquí</a>
+        a: ({ node, ...props }) => (
+          <a
+            {...props}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 font-semibold underline hover:text-blue-800 transition-colors"
+          >
+            🔗 haz clic aquí
+          </a>
         ),
-        strong: ({node, ...props}) => <strong className="font-bold">{props.children}</strong>,
-        em: ({node, ...props}) => <em className="italic">{props.children}</em>,
-        li: ({node, ...props}) => <li className="ml-4 list-disc">{props.children}</li>,
+        strong: ({ node, ...props }) => (
+          <strong className="font-bold">{props.children}</strong>
+        ),
+        em: ({ node, ...props }) => (
+          <em className="italic">{props.children}</em>
+        ),
+        li: ({ node, ...props }) => (
+          <li className="ml-4 list-disc">{props.children}</li>
+        ),
       }}
     >
       {msgWithEmojis}
@@ -50,7 +63,7 @@ function transformarListaADatosEnLinea(msg) {
     const campo = `**${listaMatch[1].trim()}**`;
     const explicacion = listaMatch[2]?.trim();
     // Evita repeticiones exactas
-    const claveUnica = campo + (explicacion ? (": " + explicacion) : "");
+    const claveUnica = campo + (explicacion ? ": " + explicacion : "");
     if (!camposSet.has(claveUnica)) {
       camposSet.add(claveUnica);
       if (explicacion) {
@@ -62,7 +75,12 @@ function transformarListaADatosEnLinea(msg) {
   }
   if (hayLista && campos.length > 0) {
     // Muestra los campos como una lista de ítems Markdown
-    return msg.replace(/(?:\d+\.\s*\*\*.*?\*\*:?.*?\n?)+/g, `Por favor, proporciona los siguientes datos:\n${campos.map(c => `- ${c}`).join("\n")}`);
+    return msg.replace(
+      /(?:\d+\.\s*\*\*.*?\*\*:?.*?\n?)+/g,
+      `Por favor, proporciona los siguientes datos:\n${campos
+        .map((c) => `- ${c}`)
+        .join("\n")}`
+    );
   }
   return msg;
 }
@@ -82,10 +100,13 @@ export const ChatMessages = ({
 
   useEffect(() => {
     setLocalTimes(
-      messages.map(msg => {
+      messages.map((msg) => {
         if (!msg.timestamp) return "";
         const date = new Date(msg.timestamp);
-        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
       })
     );
   }, [messages]);
@@ -95,10 +116,12 @@ export const ChatMessages = ({
       setAudioError(null);
       await playAssistantAudio(content, idx);
     } catch (error) {
-      if (error.message.includes('interacción del usuario')) {
-        setAudioError('Haz clic en el botón de reproducción para escuchar el audio');
+      if (error.message.includes("interacción del usuario")) {
+        setAudioError(
+          "Haz clic en el botón de reproducción para escuchar el audio"
+        );
       } else {
-        setAudioError('Error al reproducir el audio. Intenta nuevamente.');
+        setAudioError("Error al reproducir el audio. Intenta nuevamente.");
       }
     }
   };
@@ -106,8 +129,21 @@ export const ChatMessages = ({
   return (
     <div ref={chatRef} className="flex-grow overflow-y-auto p-4 text-black">
       {messages.map((msg, i) => {
+        if (msg?.sender) {
+          if (msg.sender == "client") {
+            msg.role = "user";
+          } else {
+            msg.role = "assistant";
+          }
+        }
+
+        if (!msg.timestamp) {
+          msg.timestamp = msg.createdAt;
+        }
+
         const isAssistant = msg.role === "assistant";
-        const isPlaying = isAssistant && isAudioPlaying && audioMessageIdx === i;
+        const isPlaying =
+          isAssistant && isAudioPlaying && audioMessageIdx === i;
         const isLoadingAudio = isAssistant && loadingAudioIdx === i;
         return (
           <div
@@ -133,7 +169,9 @@ export const ChatMessages = ({
             >
               {msg.role === "user"
                 ? msg.content
-                : renderAssistantMessage(transformarListaADatosEnLinea(msg.content))}
+                : renderAssistantMessage(
+                    transformarListaADatosEnLinea(msg.content)
+                  )}
               {isAssistant && (
                 <div className="flex items-center gap-2 mt-2">
                   {isPlaying ? (
@@ -150,19 +188,46 @@ export const ChatMessages = ({
                         title="Pausar audio"
                       >
                         {/* Icono de pausa */}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-blue-600"
+                        >
                           <rect x="6" y="4" width="4" height="16" rx="1" />
                           <rect x="14" y="4" width="4" height="16" rx="1" />
                         </svg>
                       </button>
-                      <span className="text-xs text-blue-600">Reproduciendo audio...</span>
+                      <span className="text-xs text-blue-600">
+                        Reproduciendo audio...
+                      </span>
                     </>
                   ) : isLoadingAudio ? (
                     // Preloader/spinner
                     <span className="w-6 h-6 flex items-center justify-center">
-                      <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      <svg
+                        className="animate-spin h-5 w-5 text-blue-600"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        />
                       </svg>
                     </span>
                   ) : (
@@ -172,13 +237,25 @@ export const ChatMessages = ({
                       title="Reproducir audio"
                     >
                       {/* Icono de play */}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-blue-600"
+                      >
                         <polygon points="5 3 19 12 5 21 5 3" />
                       </svg>
                     </button>
                   )}
                   {audioError && audioMessageIdx === i && (
-                    <span className="text-xs text-red-500 ml-2">{audioError}</span>
+                    <span className="text-xs text-red-500 ml-2">
+                      {audioError}
+                    </span>
                   )}
                 </div>
               )}
@@ -187,8 +264,7 @@ export const ChatMessages = ({
               <small className="text-xs text-gray-500 mt-1 px-3">
                 {typeof window === "undefined"
                   ? new Date(msg.timestamp).toISOString().slice(11, 16)
-                  : localTimes[i]
-                }
+                  : localTimes[i]}
               </small>
             )}
           </div>
@@ -198,12 +274,42 @@ export const ChatMessages = ({
       {isLoading && <TypingIndicator />}
       {/* Animaciones de onda para el indicador de audio */}
       <style jsx>{`
-        @keyframes wave1 { 0%,100%{height:1rem;} 50%{height:1.5rem;} }
-        @keyframes wave2 { 0%,100%{height:0.75rem;} 50%{height:1.25rem;} }
-        @keyframes wave3 { 0%,100%{height:0.5rem;} 50%{height:1rem;} }
-        .animate-wave1 { animation: wave1 1s infinite; }
-        .animate-wave2 { animation: wave2 1s infinite; }
-        .animate-wave3 { animation: wave3 1s infinite; }
+        @keyframes wave1 {
+          0%,
+          100% {
+            height: 1rem;
+          }
+          50% {
+            height: 1.5rem;
+          }
+        }
+        @keyframes wave2 {
+          0%,
+          100% {
+            height: 0.75rem;
+          }
+          50% {
+            height: 1.25rem;
+          }
+        }
+        @keyframes wave3 {
+          0%,
+          100% {
+            height: 0.5rem;
+          }
+          50% {
+            height: 1rem;
+          }
+        }
+        .animate-wave1 {
+          animation: wave1 1s infinite;
+        }
+        .animate-wave2 {
+          animation: wave2 1s infinite;
+        }
+        .animate-wave3 {
+          animation: wave3 1s infinite;
+        }
       `}</style>
     </div>
   );
