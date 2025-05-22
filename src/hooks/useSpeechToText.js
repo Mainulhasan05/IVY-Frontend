@@ -1,104 +1,123 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback, useEffect } from "react";
 
-// Compara frases por palabras en común (umbral: 70%)
-function sonFrasesSimilares(f1, f2) {
-  const palabras1 = f1.split(' ');
-  const palabras2 = f2.split(' ');
-  const comunes = palabras1.filter(p => palabras2.includes(p)).length;
-  const maxLen = Math.max(palabras1.length, palabras2.length);
-  return (comunes / maxLen) > 0.7;
-}
+// Simple text cleaning to remove duplicates
+function cleanText(text) {
+  if (!text || text.trim().length === 0) return "";
 
-// Elimina repeticiones exactas y frases muy similares
-function eliminarRepeticionesFrasesSimilares(texto) {
-  const frases = texto
-    .split(/[.?!,;:\n]+/)
-    .map(f => f.trim().toLowerCase())
-    .filter(Boolean);
-
-  const frasesUnicas = [];
-  frases.forEach(f => {
-    if (!frasesUnicas.some(existing => sonFrasesSimilares(existing, f))) {
-      frasesUnicas.push(f);
-    }
-  });
-
-  return frasesUnicas.join('. ') + (texto.trim().endsWith('.') ? '' : '.');
+  // Remove extra spaces and clean up
+  return text.trim().replace(/\s+/g, " ");
 }
 
 export default function useSpeechToText({
   onResult,
-  lang = 'es-ES',
-  activarEnvioPorPalabraClave = false, // activa detección automática de palabras como "enviar"
-  onSend
+  lang = "es-ES",
+  confidenceThreshold = 0.6,
 }) {
   const [isListening, setIsListening] = useState(false);
-  const [tempText, setTempText] = useState('');
+  const [tempText, setTempText] = useState("");
+  const [isSupported, setIsSupported] = useState(true);
+
   const recognitionRef = useRef(null);
-  const finalTranscriptRef = useRef('');
+  const finalTranscriptRef = useRef("");
 
-  const startListening = () => {
-    setTempText('');
-    finalTranscriptRef.current = '';
+  // Check browser support
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    setIsSupported(!!SpeechRecognition);
+  }, []);
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.error('Este navegador no soporta SpeechRecognition');
+  const startListening = useCallback(() => {
+    if (!isSupported) {
+      console.error("Speech recognition not supported in this browser");
       return;
     }
 
+    setTempText("");
+    finalTranscriptRef.current = "";
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+
+    // Simple configuration
     recognition.lang = lang;
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscriptRef.current += transcript + ' ';
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        const confidence = result[0].confidence || 1;
+
+        if (result.isFinal) {
+          // Only add if confidence is acceptable
+          if (confidence >= confidenceThreshold) {
+            finalTranscript += transcript + " ";
+          }
         } else {
           interimTranscript += transcript;
         }
       }
 
-      const textoCompleto = (finalTranscriptRef.current + interimTranscript).trim();
-      setTempText(textoCompleto);
-
-      if (activarEnvioPorPalabraClave && onSend) {
-        const textoLimpio = textoCompleto.toLowerCase();
-        if (/\b(enviar|listo|ya está|mándalo)\b/.test(textoLimpio)) {
-          stopListening(); // detener antes de enviar
-          onSend(textoLimpio.replace(/\b(enviar|listo|ya está|mándalo)\b/, '').trim());
-        }
+      if (finalTranscript) {
+        finalTranscriptRef.current += finalTranscript;
       }
+
+      const fullText = (finalTranscriptRef.current + interimTranscript).trim();
+      setTempText(fullText);
     };
 
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
     recognition.onend = () => {
-      if (isListening) recognition.start();
-      else setIsListening(false);
+      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
-    recognitionRef.current.start();
-    setIsListening(true);
-  };
+    recognition.start();
+  }, [isSupported, lang, confidenceThreshold]);
 
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
-      if (tempText.trim()) {
-        const limpio = eliminarRepeticionesFrasesSimilares(tempText.trim());
-        onResult(limpio);
-      }
-      setTempText('');
-      finalTranscriptRef.current = '';
-    }
-  };
 
-  return { isListening, startListening, stopListening, tempText };
+      if (tempText.trim()) {
+        const cleanedText = cleanText(tempText.trim());
+        onResult?.(cleanedText);
+      }
+
+      setTempText("");
+      finalTranscriptRef.current = "";
+    }
+  }, [isListening, tempText, onResult]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  return {
+    isListening,
+    startListening,
+    stopListening,
+    tempText,
+    isSupported,
+  };
 }
