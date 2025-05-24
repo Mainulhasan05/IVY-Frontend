@@ -1,8 +1,8 @@
 import {
-  enviarDatosCrmJson,
-  convertirMoneda,
-  enviarCorreoPropuesta,
-  crearCarpetaCliente,
+  sendCrmJsonData,
+  convertCurrency,
+  sendMailProposal,
+  createCustomerFolder,
 } from "./webhooks";
 import {
   getOrCreateThread,
@@ -16,11 +16,11 @@ import {
 } from "./utils";
 import { CLOSING_REGEX } from "@/utils/closingRegex";
 import {
-  tengoTodosLosDatos,
-  verificarEstructuraDatos,
-  obtenerCamposFaltantes,
-  enviarCorreoPropuestapPer,
-  validarEstructuraCorreo,
+  haveAllData,
+  verifyDataStructure,
+  getMissingFields,
+  sendMailProposal,
+  validateMailStructure,
 } from "./chatUtils";
 import { dataCRM } from "./data/camposCRM";
 
@@ -44,10 +44,10 @@ export async function POST(req) {
 
   // Aquí guardamos las direcciones de las herramientas que podemos usar (como guardar datos o convertir moneda)
   const webhookMap = {
-    crearCarpetaCliente: process.env.WEBHOOK_CREAR_CARPETA_CLIENTE,
-    enviarDatosCrmJson: process.env.WEBHOOK_ENVIAR_DATOS_CRM,
-    enviarCorreoPropuesta: process.env.WEBHOOK_ENVIAR_CORREO_PROPUESTA,
-    convertirMoneda: process.env.WEBHOOK_CONVERTIR_MONEDA,
+    createCustomerFolder: process.env.WEBHOOK_CREATE_CLIENT_FOLDER,
+    sendCrmJsonData: process.env.WEBHOOK_SEND_CRM_DATA,
+    sendMailProposal: process.env.WEBHOOK_ENVIAR_CORREO_PROPUESTA,
+    convertCurrency: process.env.WEBHOOK_CONVERT_CURRENCY,
   };
 
   //  Aquí leemos el mensaje que nos envió el usuario y si ya hay una conversación previa
@@ -135,31 +135,31 @@ export async function POST(req) {
           try {
             // Actualizamos el estado según la acción
             switch (toolName) {
-              case "convertirMoneda":
+              case "convertCurrency":
                 currentStatus = "converting";
                 break;
-              case "enviarDatosCrmJson":
+              case "sendCrmJsonData":
                 currentStatus = "analyzing";
                 break;
-              case "enviarCorreoPropuesta":
+              case "sendMailProposal":
                 currentStatus = "generating";
                 break;
-              case "crearCarpetaCliente":
+              case "createCustomerFolder":
                 currentStatus = "processing";
                 break;
               default:
                 currentStatus = "processing";
             }
 
-            if (toolName === "enviarDatosCrmJson") {
+            if (toolName === "sendCrmJsonData") {
               // Agregamos el threadId automáticamente antes de cualquier validación
               if (!args.cliente) {
                 args.cliente = {};
               }
               args.cliente.threadId = threadId;
 
-              if (!tengoTodosLosDatos(args)) {
-                const camposFaltantes = obtenerCamposFaltantes(args);
+              if (!haveAllData(args)) {
+                const camposFaltantes = getMissingFields(args);
                 const camposFaltantesFiltrados = camposFaltantes.filter(
                   (campo) => campo !== "cliente.threadId"
                 );
@@ -168,14 +168,14 @@ export async function POST(req) {
                 )}. Por favor, pídele al usuario que los proporcione.`;
               } else {
                 // Verificación de estructura
-                const estructuraCorrecta = verificarEstructuraDatos(args);
+                const estructuraCorrecta = verifyDataStructure(args);
 
                 if (!estructuraCorrecta) {
                   output =
                     "La estructura de los datos no es correcta. Por favor, verifica que todos los campos requeridos estén presentes con el formato correcto.";
                 } else {
-                  // Siempre llamamos a enviarDatosCrmJson si la estructura es correcta
-                  output = await enviarDatosCrmJson(args, webhookUrl);
+                  // Siempre llamamos a sendCrmJsonData si la estructura es correcta
+                  output = await sendCrmJsonData(args, webhookUrl);
                   if (typeof output === "string" && output.trim() === "Accepted") {
                     // Guardamos el estado del CRM para este thread
                     crmState.set(threadId, {
@@ -187,10 +187,10 @@ export async function POST(req) {
                   }
                 }
               }
-            } else if (toolName === "convertirMoneda") {
-              output = await convertirMoneda(args, webhookUrl, threadId);
-            } else if (toolName === "crearCarpetaCliente") {
-              output = await crearCarpetaCliente(args, webhookUrl, threadId);
+            } else if (toolName === "convertCurrency") {
+              output = await convertCurrency(args, webhookUrl, threadId);
+            } else if (toolName === "createCustomerFolder") {
+              output = await createCustomerFolder(args, webhookUrl, threadId);
               if (typeof output === "object" && output.folderLink) {
                 folderState.set(threadId, output.folderLink);
                 console.log(
@@ -198,21 +198,21 @@ export async function POST(req) {
                   threadId
                 );
               }
-            } else if (toolName === "enviarCorreoPropuesta") {
-              const validacion = validarEstructuraCorreo(args);
+            } else if (toolName === "sendMailProposal") {
+              const validacion = validateMailStructure(args);
               if (validacion.valido) {
-                output = await enviarCorreoPropuestapPer(
+                output = await sendMailProposalpPer(
                   args,
                   threadId,
-                  enviarCorreoPropuesta,
+                  sendMailProposal,
                   webhookUrl
                 );
-                // output = await enviarCorreoPropuestapPer(
+                // output = await sendMailProposalpPer(
                 //   args,
                 //   threadId,
                 //   folderState,
-                //   enviarCorreoPropuesta,
-                //   webhookMap.enviarCorreoPropuesta,
+                //   sendMailProposal,
+                //   webhookMap.sendMailProposal,
                 //   sendMessageToThread,
                 //   pendingActions,
                 //   runAssistant,

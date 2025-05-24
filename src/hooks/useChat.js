@@ -9,8 +9,7 @@ export const useChat = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content:
-        "Hola 👋 Soy IVY, tu asistente de Vyrtium. ¿En qué te puedo ayudar hoy?",
+      content: "Hi, 👋 I'm Ivy, your virtual assistant. How may I help you today?",
       timestamp: getRoundedTimestamp(),
     },
   ]);
@@ -99,7 +98,7 @@ export const useChat = () => {
           setTimeout(async () => {
             setInputValue("");
             await sendMessageAuto(
-              "Despedite del usuario de una manera muy personalizada y creale la carpeta en google drive para que pueda subir referencias para el producto deseado."
+              "Send your farewell to the user in a personalized way and create a folder in Google Drive so they can upload references for the desired product."
             );
           }, 500);
           return;
@@ -118,7 +117,7 @@ export const useChat = () => {
             },
             {
               role: "system",
-              content: `🔒 La conversación ha finalizado. Si deseas iniciar una nueva, recarga la página.\n\n📁 Se ha creado una carpeta en Google Drive con la información de la conversación: ${data.folderUrl}`,
+              content: `🔒 The conversation has ended. If you'd like to start a new one, please refresh the page.\n\n📁 A folder has been created in Google Drive with the conversation information: ${data.folderUrl}`,
               timestamp: getRoundedTimestamp(),
             },
           ]);
@@ -146,7 +145,7 @@ export const useChat = () => {
         {
           role: "assistant",
           content:
-            "❌ Hubo un error al procesar tu mensaje. Intenta nuevamente.",
+            "❌ There was an error processing your message. Please try again.",
           timestamp: getRoundedTimestamp(),
         },
       ]);
@@ -198,7 +197,7 @@ export const useChat = () => {
             },
             {
               role: "system",
-              content: `🔒 La conversación ha finalizado. Si deseas iniciar una nueva, recarga la página.\n\n📁 Se ha creado una carpeta en Google Drive con la información de la conversación: ${data.folderUrl}`,
+              content: `🔒 The conversation has ended. If you'd like to start a new one, please refresh the page.\n\n📁 A folder has been created in Google Drive with the conversation information: ${data.folderUrl}`,
               timestamp: getRoundedTimestamp(),
             },
           ]);
@@ -226,7 +225,7 @@ export const useChat = () => {
         {
           role: "assistant",
           content:
-            "❌ Hubo un error al procesar tu mensaje. Intenta nuevamente.",
+            "❌ There was an error processing your message. Please try again.",
           timestamp: getRoundedTimestamp(),
         },
       ]);

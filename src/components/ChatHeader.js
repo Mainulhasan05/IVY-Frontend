@@ -5,8 +5,8 @@ export const ChatHeader = () => {
         <span className="text-blue-600 font-bold text-lg">IV</span>
       </div>
       <div>
-        <h1 className="font-bold text-lg">IVY Asistente</h1>
-        <p className="text-xs text-blue-100">Tu asistente inteligente de Vyrtium</p>
+        <h1 className="font-bold text-lg">Ivy Assistant</h1>
+        <p className="text-xs text-blue-100">Your smart virtual assistant</p>
       </div>
     </div>
   );

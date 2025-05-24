@@ -2,15 +2,15 @@ export const ProcessingStatus = ({ status }) => {
   const getStatusMessage = () => {
     switch (status) {
       case 'converting':
-        return 'Convirtiendo moneda...';
+        return 'Converting currency...';
       case 'analyzing':
-        return 'Analizando datos...';
+        return 'Analyzing data...';
       case 'processing':
-        return 'Procesando información...';
+        return 'Processing information...';
       case 'generating':
-        return 'Generando respuesta...';
+        return 'Generating response...';
       default:
-        return 'Procesando...';
+        return 'Processing...';
     }
   };
 

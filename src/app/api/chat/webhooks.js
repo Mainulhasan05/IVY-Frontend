@@ -1,6 +1,6 @@
 // Utilidades para llamar a los webhooks de acciones especiales
 
-export async function enviarDatosCrmJson(args, webhookUrl) {
+export async function sendCrmJsonData(args, webhookUrl) {
   try {
     const makeRes = await fetch(webhookUrl, {
       method: "POST",
@@ -9,27 +9,27 @@ export async function enviarDatosCrmJson(args, webhookUrl) {
     });
     if (!makeRes.ok) {
       const errorText = await makeRes.text();
-      console.error("❌ Error en webhook (enviarDatosCrmJson):", {
+      console.error("❌ Error in webhook (sendCrmJsonData):", {
         status: makeRes.status,
         statusText: makeRes.statusText,
         respuesta: errorText
       });
-      throw new Error(`Error al guardar datos en CRM: ${errorText}`);
+      throw new Error(`Error saving data to CRM: ${errorText}`);
     }
     const result = await makeRes.text();
-    console.log("🔔 Resultado del webhook (enviarDatosCrmJson):", {
+    console.log("🔔 Webhook result (sendCrmJsonData):", {
       status: makeRes.status,
       statusText: makeRes.statusText,
       respuesta: result
     });
-    return `${result} - Ahora usa la herramienta enviarCorreoPropuesta para enviar el correo , es obligatorio hacerlo`;
+    return `${result} - Now use the sendMailProposal tool to send the email, it is mandatory to do so.`;
   } catch (error) {
-    console.error("❌ enviarDatosCrmJson:", error);
+    console.error("❌ sendCrmJsonData:", error);
     throw error;
   }
 }
 
-export async function convertirMoneda(args, webhookUrl) {
+export async function convertCurrency(args, webhookUrl) {
   try {
     const makeRes = await fetch(webhookUrl, {
       method: "POST",
@@ -38,27 +38,27 @@ export async function convertirMoneda(args, webhookUrl) {
     });
     if (!makeRes.ok) {
       const errorText = await makeRes.text();
-      console.error("❌ Error en webhook (convertirMoneda):", {
+      console.error("❌ Error in webhook (convertCurrency):", {
         status: makeRes.status,
         statusText: makeRes.statusText,
         respuesta: errorText
       });
-      throw new Error(`Error al convertir moneda: ${errorText}`);
+      throw new Error(`Error converting currency: ${errorText}`);
     }
     const result = await makeRes.text();
-    console.log("🔔 Resultado del webhook (convertirMoneda):", {
+    console.log("🔔 Webhook result (convertCurrency):", {
       status: makeRes.status,
       statusText: makeRes.statusText,
       respuesta: result
     });
     return result;
   } catch (error) {
-    console.error("❌ Error inesperado en convertirMoneda:", error);
+    console.error("❌ Unexpected error in convertCurrency:", error);
     throw error;
   }
 }
 
-export async function crearCarpetaCliente(args, webhookUrl) {
+export async function createCustomerFolder(args, webhookUrl) {
   try {
     const makeRes = await fetch(webhookUrl, {
       method: "POST",
@@ -67,27 +67,27 @@ export async function crearCarpetaCliente(args, webhookUrl) {
     });
     if (!makeRes.ok) {
       const errorText = await makeRes.text();
-      console.error("❌ Error en webhook (crearCarpetaCliente):", {
+      console.error("❌ Error in webhook (createCustomerFolder):", {
         status: makeRes.status,
         statusText: makeRes.statusText,
         respuesta: errorText
       });
-      throw new Error(`Error al crear carpeta: ${errorText}`);
+      throw new Error(`Error creating folder: ${errorText}`);
     }
     const result = await makeRes.text();
-    console.log("🔔 Resultado del webhook (crearCarpetaCliente):", {
+    console.log("🔔 Webhook result (createCustomerFolder):", {
       status: makeRes.status,
       statusText: makeRes.statusText,
       respuesta: result
     });
     return result;
   } catch (error) {
-    console.error("❌ Error inesperado en crearCarpetaCliente:", error);
+    console.error("❌ Unexpected error in createCustomerFolder:", error);
     throw error;
   }
 }
 
-export async function enviarCorreoPropuesta(args, webhookUrl) {
+export async function sendMailProposal(args, webhookUrl) {
   try {
     const makeRes = await fetch(webhookUrl, {
       method: "POST",
@@ -96,22 +96,22 @@ export async function enviarCorreoPropuesta(args, webhookUrl) {
     });
     if (!makeRes.ok) {
       const errorText = await makeRes.text();
-      console.error("❌ Error en webhook (enviarCorreoPropuesta):", {
+      console.error("❌ Error en webhook (sendMailProposal):", {
         status: makeRes.status,
         statusText: makeRes.statusText,
         respuesta: errorText
       });
-      throw new Error(`Error al enviar correo: ${errorText}`);
+      throw new Error(`Error sending email: ${errorText}`);
     }
     const result = await makeRes.text();
-    console.log("🔔 Resultado del webhook (enviarCorreoPropuesta):", {
+    console.log("🔔 Webhook result (sendMailProposal):", {
       status: makeRes.status,
       statusText: makeRes.statusText,
       respuesta: result
     });
     return result;
   } catch (error) {
-    console.error("❌ Error inesperado en enviarCorreoPropuesta:", error);
+    console.error("❌ Unexpected error in sendMailProposal:", error);
     throw error;
   }
 } 

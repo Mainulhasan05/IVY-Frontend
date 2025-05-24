@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { hablarConElevenLabs } from "../utils/voz";
+import { speakWithElevenLabs } from "../utils/voz";
 
 export function useAudioAssistant() {
   const audioRef = useRef(null);
@@ -16,7 +16,7 @@ export function useAudioAssistant() {
   const playNotificationSound = () => {
     if (audioRef.current) {
       audioRef.current.play().catch(error => {
-        console.log('Error al reproducir el sonido:', error);
+        console.log('Error playing sound:', error);
       });
     }
   };
@@ -35,7 +35,7 @@ export function useAudioAssistant() {
     setAudioMessageIdx(null);
     setLoadingAudioIdx(idx);
     try {
-      await hablarConElevenLabs(texto, audioRef);
+      await speakWithElevenLabs(texto, audioRef);
       setIsAudioPlaying(true);
       setAudioMessageIdx(idx);
       setLoadingAudioIdx(null);

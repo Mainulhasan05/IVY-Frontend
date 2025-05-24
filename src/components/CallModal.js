@@ -5,78 +5,105 @@ export const CallModal = ({ isOpen, onClose }) => {
   const [transcript, setTranscript] = useState('');
   const wsRef = useRef(null);
   const mediaStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const processorRef = useRef(null);
+  const sourceRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
     // Deepgram WebSocket endpoint
-    const DEEPGRAM_API_KEY = '8abd6e1342bcb2b6845d355a091a15afd65fb20c'; // ¡Pon tu API Key aquí!
+    const DEEPGRAM_API_KEY = '8abd6e1342bcb2b6845d355a091a15afd65fb20c';
     const deepgramUrl = `wss://api.deepgram.com/v1/listen?punctuate=true&interim_results=true`;
 
-    console.log("Intentando abrir WebSocket con Deepgram...");
-    // Abrir WebSocket
-    const ws = new WebSocket(deepgramUrl, [
-      'token',
-      DEEPGRAM_API_KEY
-    ]);
+    console.log("Trying to open WebSocket with Deepgram...");
+    const ws = new WebSocket(deepgramUrl, ["token", DEEPGRAM_API_KEY]);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log("WebSocket abierto correctamente.");
-      // Acceder al micrófono
+      console.log("WebSocket opened successfully");
+
       navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        console.log("Acceso al micrófono concedido.");
+        console.log("Microphone access granted");
         mediaStreamRef.current = stream;
+
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = audioContext;
+
         const source = audioContext.createMediaStreamSource(stream);
+        sourceRef.current = source;
+
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
 
         source.connect(processor);
-        processor.connect(audioContext.destination);
+        processor.connect(audioContext.destination); // optional, can remove if you don’t want feedback
 
         processor.onaudioprocess = (e) => {
-          if (ws.readyState === 1) {
+          if (ws.readyState === WebSocket.OPEN) {
             const inputData = e.inputBuffer.getChannelData(0);
             const buffer = new ArrayBuffer(inputData.length * 2);
             const view = new DataView(buffer);
             for (let i = 0; i < inputData.length; i++) {
-              view.setInt16(i * 2, inputData[i] * 0x7fff, true);
+              const s = Math.max(-1, Math.min(1, inputData[i]));
+              view.setInt16(i * 2, s * 0x7fff, true);
             }
             ws.send(buffer);
           }
         };
-
-        ws.onclose = () => {
-          console.log("WebSocket cerrado (desde getUserMedia).");
-          processor.disconnect();
-          source.disconnect();
-          audioContext.close();
-          stream.getTracks().forEach(track => track.stop());
-        };
-      }).catch((err) => {
-        console.error("Error al acceder al micrófono:", err);
+      }).catch((error) => {
+        console.error("Error accessing microphone:", error);
       });
     };
 
     ws.onerror = (e) => {
-      console.error("Error en WebSocket:", e);
+      console.error("Error on WebSocket:", e);
     };
 
     ws.onclose = (e) => {
-      console.log("WebSocket cerrado (evento global):", e);
+      console.log("WebSocket closed:", e);
+
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current.onaudioprocess = null;
+      }
+
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
+      }
+
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
 
     ws.onmessage = (msg) => {
-      console.log("Mensaje recibido de Deepgram:", msg.data);
       const data = JSON.parse(msg.data);
       if (data.channel && data.channel.alternatives[0]) {
-        setTranscript(data.channel.alternatives[0].transcript);
-        setIsAssistantTalking(!!data.channel.alternatives[0].transcript);
+        const spoken = data.channel.alternatives[0].transcript;
+        setTranscript(spoken);
+        setIsAssistantTalking(!!spoken);
       }
     };
 
     return () => {
-      ws.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current.onaudioprocess = null;
+      }
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -90,11 +117,10 @@ export const CallModal = ({ isOpen, onClose }) => {
       <button
         onClick={onClose}
         className="absolute top-6 right-6 z-50 text-gray-700 hover:text-gray-900 text-3xl"
-        aria-label="Cerrar"
+        aria-label="Close"
       >
         ×
       </button>
-      {/* SVG animado centrado */}
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         <div className={`relative w-56 h-56 flex items-center justify-center`}>
           <svg
@@ -118,9 +144,7 @@ export const CallModal = ({ isOpen, onClose }) => {
           {transcript}
         </div>
       </div>
-      {/* Botones en la parte inferior */}
       <div className="w-full flex justify-center gap-8 pb-10">
-        {/* Botón micrófono */}
         <button
           className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow
             ${isAssistantTalking ? "bg-blue-100 animate-mic" : "bg-gray-100"}
@@ -144,11 +168,10 @@ export const CallModal = ({ isOpen, onClose }) => {
             <line x1="8" y1="22" x2="16" y2="22" />
           </svg>
         </button>
-        {/* Botón cerrar */}
         <button
           onClick={onClose}
           className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl shadow"
-          aria-label="Cerrar"
+          aria-label="Close"
         >
           <svg width="32" height="32" fill="none" stroke="#ef4444" strokeWidth="2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -156,7 +179,6 @@ export const CallModal = ({ isOpen, onClose }) => {
           </svg>
         </button>
       </div>
-      {/* Animaciones Tailwind personalizadas */}
       <style jsx>{`
         .animate-pulse-slow {
           animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;

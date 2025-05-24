@@ -157,7 +157,7 @@ export const ChatMessages = ({
                 msg.role === "user" ? "text-blue-600" : "text-green-600"
               }`}
             >
-              {msg.role === "user" ? "Tú" : "IVY Asistente"}
+              {msg.role === "user" ? "You" : "Ivy Assistant"}
             </div>
 
             <div
@@ -204,7 +204,7 @@ export const ChatMessages = ({
                         </svg>
                       </button>
                       <span className="text-xs text-blue-600">
-                        Reproduciendo audio...
+                        Playing audio...
                       </span>
                     </>
                   ) : isLoadingAudio ? (
@@ -234,7 +234,7 @@ export const ChatMessages = ({
                     <button
                       onClick={() => handlePlayAudio(msg.content, i)}
                       className="w-6 h-6 flex items-center justify-center rounded hover:bg-blue-100 transition-colors"
-                      title="Reproducir audio"
+                      title="Play audio"
                     >
                       {/* Icono de play */}
                       <svg
@@ -262,9 +262,7 @@ export const ChatMessages = ({
             </div>
             {msg.timestamp && (
               <small className="text-xs text-gray-500 mt-1 px-3">
-                {typeof window === "undefined"
-                  ? new Date(msg.timestamp).toISOString().slice(11, 16)
-                  : localTimes[i]}
+                {new Date(msg.timestamp).toISOString().slice(11, 16)}
               </small>
             )}
           </div>
