@@ -1,125 +1,71 @@
-import { useEffect, useRef, useState } from 'react';
+"use client";
 
-export const CallModal = ({ isOpen, onClose }) => {
-  const [isAssistantTalking, setIsAssistantTalking] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const wsRef = useRef(null);
-  const mediaStreamRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const processorRef = useRef(null);
-  const sourceRef = useRef(null);
+import { useEffect, useRef, useState } from "react";
+
+export function CallModal({ isOpen, onClose }) {
+
+  const [ text, setText ] = useState("")
+  const [ isRecording, setIsRecording ] = useState(false)
+  const socketRef = useRef(null)
+  const microphoneRef = useRef(null)
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    // Deepgram WebSocket endpoint
-    const DEEPGRAM_API_KEY = '8abd6e1342bcb2b6845d355a091a15afd65fb20c';
-    const deepgramUrl = `wss://api.deepgram.com/v1/listen?punctuate=true&interim_results=true`;
-
-    console.log("Trying to open WebSocket with Deepgram...");
-    const ws = new WebSocket(deepgramUrl, ["token", DEEPGRAM_API_KEY]);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("WebSocket opened successfully");
-
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        console.log("Microphone access granted");
-        mediaStreamRef.current = stream;
-
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        audioContextRef.current = audioContext;
-
-        const source = audioContext.createMediaStreamSource(stream);
-        sourceRef.current = source;
-
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
-
-        source.connect(processor);
-        processor.connect(audioContext.destination); // optional, can remove if you don’t want feedback
-
-        processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const buffer = new ArrayBuffer(inputData.length * 2);
-            const view = new DataView(buffer);
-            for (let i = 0; i < inputData.length; i++) {
-              const s = Math.max(-1, Math.min(1, inputData[i]));
-              view.setInt16(i * 2, s * 0x7fff, true);
-            }
-            ws.send(buffer);
-          }
-        };
-      }).catch((error) => {
-        console.error("Error accessing microphone:", error);
-      });
-    };
-
-    ws.onerror = (e) => {
-      console.error("Error on WebSocket:", e);
-    };
-
-    ws.onclose = (e) => {
-      console.log("WebSocket closed:", e);
-
-      if (processorRef.current) {
-        processorRef.current.disconnect();
-        processorRef.current.onaudioprocess = null;
-      }
-
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-      }
-
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-
-    ws.onmessage = (msg) => {
-      const data = JSON.parse(msg.data);
-      if (data.channel && data.channel.alternatives[0]) {
-        const spoken = data.channel.alternatives[0].transcript;
-        setTranscript(spoken);
-        setIsAssistantTalking(!!spoken);
-      }
-    };
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (processorRef.current) {
-        processorRef.current.disconnect();
-        processorRef.current.onaudioprocess = null;
-      }
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
+    startTranscription()
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  async function startTranscription() {
+    setIsRecording(true)
+
+    const DEEPGRAM_API = 'wss://api.deepgram.com/v1/listen?punctuate=true'
+    const DEEPGRAM_API_KEY = 'e324bc51d0aa777d7752e04db876b793e5670229'
+
+    const socket = new WebSocket(DEEPGRAM_API, ["token", DEEPGRAM_API_KEY])
+    socketRef.current = socket
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
+    microphoneRef.current = recorder
+
+    recorder.ondataavailable = (e) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(e.data)
+        return
+      }
+      console.error("WebSocket isn't in OPEN state")
+    }
+
+    recorder.start(300)
+
+    socket.onmessage = (message) => {
+      const data = JSON.parse(message.data)
+      const newText = data.channel?.alternatives[0]?.transcript
+      if (newText && data.is_final) {
+        setText((prev) => prev + newText + "\n")
+      }
+    }
+
+    socket.onclose = () => {
+      setIsRecording(false)
+      onClose()
+    }
+  }
+
+  function stopTranscription() {
+    microphoneRef.current?.stop()
+    socketRef.current?.close()
+    setIsRecording(false)
+    onClose()
+  }
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
       <button
-        onClick={onClose}
+        onClick={stopTranscription}
+        disabled={!isRecording}
         className="absolute top-6 right-6 z-50 text-gray-700 hover:text-gray-900 text-3xl"
         aria-label="Close"
       >
-        ×
+        X
       </button>
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         <div className={`relative w-56 h-56 flex items-center justify-center`}>
@@ -129,7 +75,7 @@ export const CallModal = ({ isOpen, onClose }) => {
             viewBox="0 0 220 220"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className={isAssistantTalking ? "animate-pulse-fast" : "animate-pulse-slow"}
+            className={!isRecording ? "animate-pulse-fast" : "animate-pulse-slow"}
           >
             <defs>
               <radialGradient id="grad" cx="50%" cy="50%" r="50%">
@@ -141,13 +87,13 @@ export const CallModal = ({ isOpen, onClose }) => {
           </svg>
         </div>
         <div className="mt-4 text-xl text-gray-700 text-center min-h-[2rem]">
-          {transcript}
+          {text}
         </div>
       </div>
       <div className="w-full flex justify-center gap-8 pb-10">
         <button
           className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow
-            ${isAssistantTalking ? "bg-blue-100 animate-mic" : "bg-gray-100"}
+            ${!isRecording ? "bg-blue-100 animate-mic" : "bg-gray-100"}
           `}
           aria-label="Micrófono"
         >
@@ -155,12 +101,12 @@ export const CallModal = ({ isOpen, onClose }) => {
             width="36"
             height="36"
             viewBox="0 0 24 24"
-            fill={isAssistantTalking ? "#38bdf8" : "none"}
+            fill={isRecording ? "#38bdf8" : "none"}
             stroke="#38bdf8"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={isAssistantTalking ? "animate-mic-icon" : ""}
+            className={isRecording ? "animate-mic-icon" : ""}
           >
             <rect x="9" y="2" width="6" height="12" rx="3" />
             <path d="M5 10v2a7 7 0 0 0 14 0v-2" />

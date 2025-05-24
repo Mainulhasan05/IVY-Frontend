@@ -39,7 +39,7 @@ export async function speakWithElevenLabs(text, audioRef) {
         if (audioRef) {
           audioRef.current = audio;
         }
-        console.error('User interaction is required to play the audio');
+        // console.error('User interaction is required to play the audio');
       }
       // throw playError;
     }
