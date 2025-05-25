@@ -46,7 +46,7 @@ export async function POST(req) {
   const webhookMap = {
     createCustomerFolder: process.env.WEBHOOK_CREATE_CLIENT_FOLDER,
     sendCrmJsonData: process.env.WEBHOOK_SEND_CRM_DATA,
-    sendMailProposal: process.env.WEBHOOK_ENVIAR_CORREO_PROPUESTA,
+    sendMailProposal: process.env.WEBHOOK_SEND_MAIL_PROPOSAL,
     convertCurrency: process.env.WEBHOOK_CONVERT_CURRENCY,
   };
 

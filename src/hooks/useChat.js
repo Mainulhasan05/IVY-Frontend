@@ -43,7 +43,7 @@ export const useChat = () => {
     ) {
       lastPlayedAssistantContent.current = messages[lastIdx].content;
       pauseAudio();
-      playAssistantAudio(messages[lastIdx].content, lastIdx);
+      // playAssistantAudio(messages[lastIdx].content, lastIdx);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
