@@ -6,6 +6,7 @@ import { ChatInput } from "../components/ChatInput";
 import { ChatHeader } from "../components/ChatHeader";
 import { ProcessingStatus } from "../components/ProcessingStatus";
 import { CallModal } from "../components/CallModal";
+import { PolicyCheckBox } from "@/components/PolicyCheckBox";
 
 export default function ChatPage() {
   const {
@@ -26,6 +27,7 @@ export default function ChatPage() {
   const chatRef = useRef();
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAcceptedPolicy, setIsAcceptedPrivacy] = useState(true);
 
   // Client-side mounting detection
   useEffect(() => {
@@ -119,6 +121,17 @@ export default function ChatPage() {
     }
   }, [messages, updateProcessingStatus]);
 
+  // checking if the user already accepted privacy policy or not
+  useEffect(() => {
+    const isPolicyAccepted = sessionStorage.getItem("ivy-policy");
+
+    if (isPolicyAccepted && isPolicyAccepted === "accepted") {
+      setIsAcceptedPrivacy(true);
+    } else {
+      setIsAcceptedPrivacy(false);
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gray-200 flex justify-center items-center p-4 font-sans">
       <div className="w-full max-w-2xl h-[85vh] flex flex-col bg-white rounded-lg shadow-md overflow-hidden relative">
@@ -134,7 +147,7 @@ export default function ChatPage() {
           />
           {isLoading && <ProcessingStatus status={processingStatus} />}
         </div>
-        <div className="p-4 border-t border-gray-200">
+        <div className="relative p-4 border-t border-gray-200">
           <ChatInput
             inputValue={inputValue}
             setInputValue={setInputValue}
@@ -143,6 +156,12 @@ export default function ChatPage() {
             pauseAudio={pauseAudio}
             onOpenCallModal={() => setIsCallModalOpen(true)}
           />
+
+          {isAcceptedPolicy || (
+            <PolicyCheckBox
+              payload={{ isAcceptedPolicy, setIsAcceptedPrivacy }}
+            />
+          )}
         </div>
         {isCallModalOpen && (
           <CallModal
