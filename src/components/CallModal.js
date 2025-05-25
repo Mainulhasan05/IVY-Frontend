@@ -23,10 +23,7 @@ export function CallModal({ isOpen, onClose }) {
     playAssistantAudio,
   } = useAudioAssistant();
 
-  const {
-    sendMessage
-  } = useChat();
-
+  const { sendMessage } = useChat();
 
   async function sendTranscriptToAPI(transcript) {
     if (!transcript.trim()) return null;
@@ -37,10 +34,10 @@ export function CallModal({ isOpen, onClose }) {
         body: JSON.stringify({ text: transcript.trim() }),
       });
       console.log("Transcript sent to API.");
-      return res
+      return res;
     } catch (err) {
       console.error("Failed to send transcript:", err);
-      return null
+      return null;
     }
   }
 
@@ -50,29 +47,37 @@ export function CallModal({ isOpen, onClose }) {
 
     silenceTimeoutRef.current = setTimeout(() => {
       console.log("Detected silence. Sending transcript...");
-      sendChatMessage({ userMessage: currentTranscript })
-      .then((res) => {
-        console.log("sending to assistantaudio:", res.response)
-        playAssistantAudio(res.response)
-      })
+      sendChatMessage({ userMessage: currentTranscript }).then((res) => {
+        console.log("sending to assistantaudio:", res.response);
+        playAssistantAudio(res.response);
+      });
       setText(""); // Clear UI
     }, 2000); // 3 seconds of silence = done talking
   }
 
   async function startTranscription() {
-    if (isRecording) return; // Prevent multiple inits
+    if (isRecording) {
+      stopTranscription();
+      onClose();
+      return;
+    }
 
     setIsRecording(true);
 
     const DEEPGRAM_URL = "wss://api.deepgram.com/v1/listen?punctuate=true";
     const DEEPGRAM_API_KEY = "e324bc51d0aa777d7752e04db876b793e5670229";
 
-    const socket = new WebSocket(`${DEEPGRAM_URL}`, ["token", DEEPGRAM_API_KEY]);
+    const socket = new WebSocket(`${DEEPGRAM_URL}`, [
+      "token",
+      DEEPGRAM_API_KEY,
+    ]);
     socketRef.current = socket;
 
     socket.onopen = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
         microphoneRef.current = recorder;
 
@@ -99,8 +104,8 @@ export function CallModal({ isOpen, onClose }) {
           setText((prev) => {
             const updated = prev + newText + "\n";
             resetSilenceTimer(updated);
-            return updated
-          })
+            return updated;
+          });
         }
       } catch (err) {
         console.error("Error parsing message:", err);
@@ -129,9 +134,9 @@ export function CallModal({ isOpen, onClose }) {
       <button
         onClick={() => {
           stopTranscription();
+          alert("Transcription stopped");
           onClose();
         }}
-        disabled={!isRecording}
         className="absolute top-6 right-6 z-50 text-gray-700 hover:text-gray-900 text-3xl"
         aria-label="Close"
       >
@@ -145,7 +150,9 @@ export function CallModal({ isOpen, onClose }) {
             viewBox="0 0 220 220"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className={!isRecording ? "animate-pulse-fast" : "animate-pulse-slow"}
+            className={
+              !isRecording ? "animate-pulse-fast" : "animate-pulse-slow"
+            }
           >
             <defs>
               <radialGradient id="grad" cx="50%" cy="50%" r="50%">
@@ -163,7 +170,6 @@ export function CallModal({ isOpen, onClose }) {
       <div className="w-full flex justify-center gap-8 pb-10">
         <button
           onClick={startTranscription}
-          disabled={isRecording}
           className="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow"
           aria-label="Micrófono"
         >
@@ -184,12 +190,22 @@ export function CallModal({ isOpen, onClose }) {
           </svg>
         </button>
         <button
-          onClick={stopTranscription}
-          disabled={!isRecording}
+          onClick={() => {
+            stopTranscription();
+
+            onClose();
+          }}
           className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl shadow"
           aria-label="Close"
         >
-          <svg width="32" height="32" fill="none" stroke="#ef4444" strokeWidth="2" viewBox="0 0 24 24">
+          <svg
+            width="32"
+            height="32"
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -203,8 +219,15 @@ export function CallModal({ isOpen, onClose }) {
           animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1);}
-          50% { opacity: 0.7; transform: scale(1.08);}
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.08);
+          }
         }
       `}</style>
     </div>
